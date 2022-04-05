@@ -1,0 +1,1042 @@
+% Created 2022-04-05 Tue 11:55
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usetheme{Antibes}
+\author{Aditya Athalye}
+\date{2022-03-26 Sat}
+\title{n ways to FizzBuzz in Clojure}
+\subtitle{(Or, How to Stop Worrying and Start Decomplecting.)}
+\hypersetup{
+ pdfauthor={Aditya Athalye},
+ pdftitle={n ways to FizzBuzz in Clojure},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 26.3 (Org mode 9.3.7)},
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\section{Intro}
+\label{sec:org62bc719}
+\begin{frame}[label={sec:org6be44f6}]{Demo Clojure concepts \& stdlib via FizzBuzz}
+\begin{itemize}
+\item \alert{The Demo Plan}: pray to Demogods and\ldots{}
+\begin{itemize}
+\item Do rapid-fire live demo, until timer runs out
+\item Where each FizzBuzz has reason to exist
+\item And \emph{"decomplect"} is said so often you think it's normal
+\end{itemize}
+\end{itemize}
+\pause
+\begin{itemize}
+\item \alert{The Demofail Plan}: Blog post (may also upload video)
+\end{itemize}
+\pause
+\begin{itemize}
+\item \alert{The Actual Plan}: Drop some sizzlin' hot takes. Leik dis\ldots{}
+\end{itemize}
+
+\begin{verse}
+If you do FP right, you get OOP for free and vice-versa.\\
+\#Smalltalk \#Clojure \#Erlang \#OCaml \#Haskell\\
+- Yours Truly :)\\
+\end{verse}
+\end{frame}
+\section{Prayer}
+\label{sec:org80416a7}
+\begin{frame}[label={sec:orge09d711}]{O Lambda the Ultimate, bless we who are in this demo\ldots{}}
+\begin{verse}
+That our core be functional,\\
+\hspace*{2em}and our functions be pure.\\
+That our data be immutable,\\
+\hspace*{2em}so we may know the value of values.\\
+That our systems be composable,\\
+\hspace*{2em}so they may scale with grace.\\
+That their States only mutate\\
+\hspace*{2em}in pleasantly surprising ways.\\
+That the networks and servers stay up.\\
+\hspace*{2em}Well, at least through this demo.\\
+\vspace*{1em}
+For otherwise, nothing lives, nothing evolves.\\
+\vspace*{1em}
+In the name of the \(\alpha\) and the \(\beta\) and the \(\eta\)\ldots{}\\
+\hspace*{2em}(\(\lambda\)x.x x) (\(\lambda\)x.x x) ; eternally\\
+\end{verse}
+\end{frame}
+\section{Definitions}
+\label{sec:org1cbf7d2}
+\begin{frame}[label={sec:orgaba8d91},fragile]{Definitions}
+ \begin{itemize}
+\item \alert{FizzBuzz}
+\end{itemize}
+\begin{quote}
+Fizz buzz is a group word game for children
+to teach them about division. Players take
+turns to count incrementally, replacing any
+number divisible by \texttt{THREE} with the word
+"Fizz", and any number divisible by \texttt{FIVE}
+with the word "Buzz". \emph{- Wikipedia}
+\end{quote}
+\pause
+\begin{itemize}
+\item \alert{"Numbers"}: Natural Numbers starting at 1
+\end{itemize}
+\pause
+\begin{itemize}
+\item \alert{\emph{Clojurish}}: postmodern revival of
+Latin roots of US English
+\begin{itemize}
+\item \emph{complect}      : braided, entwined, hopelessly
+\item \emph{complected}    : Thing that makes Clojurian frown.
+\item \emph{decomplect}    : unbraid, disentwine
+\item \emph{decomplected}  : Thing that makes Clojurian smile.
+\item \emph{decomplecting} : Activity that Clojurian enjoys.
+(coming up!)
+\end{itemize}
+\end{itemize}
+\end{frame}
+\section{A Classic}
+\label{sec:org1f2beca}
+\begin{frame}[label={sec:orgaeb2465},fragile]{Le FizzBuzz Classique: First try}
+ \begin{itemize}
+\item Accidentally discover \emph{\texttt{for}} in stdlib
+\item "Ooh, List Comprehension. Nice!"
+(- The Python gentlenerds in the house :)
+\pause
+\begin{verbatim}
+(ns user)
+(defn fizz-buzz-classic
+  [num-xs]
+  (for [n num-xs]
+    (cond
+      (zero? (rem n 15)) (println "FizzBuzz")
+      (zero? (rem n 3)) (println "Fizz")
+      (zero? (rem n 5)) (println "Buzz")
+      :else (println n))))
+\end{verbatim}
+\pause
+\item Those pesky nils, tho.. (see REPL console)
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org401141f},fragile]{Le FizzBuzz Classique est mort à Clojure}
+ Désolé :(
+
+\begin{itemize}
+\item \emph{\texttt{for}} is Lazy
+
+\item REPL is eager
+
+\item Here be Dragons
+
+\item Unlearn old habits
+
+\item Or learn from prod outage
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgd4a6253},fragile]{Le FizzBuzz Classique: Remedied}
+ No more \emph{\texttt{println}}, no more nils.
+\begin{verbatim}
+(defn lazybuzz
+  [num-xs]
+  (for [n num-xs]
+    (cond
+      (zero? (rem n 15)) "FizzBuzz"
+      (zero? (rem n 3)) "Fizz"
+      (zero? (rem n 5)) "Buzz"
+      :else n)))
+
+(lazybuzz [1 3 5 15 16]) ; yes
+
+(fizz-buzz-classic [1 3 5 15 19]) ; bleh
+\end{verbatim}
+\end{frame}
+\begin{frame}[label={sec:orgb707d02},fragile]{Le FizzBuzz Classique: dissected}
+ \begin{itemize}
+\item "Classic" FizzBuzz considered harmful (in Clojure)
+
+\item Examine \& avoid its severe defects:
+\begin{itemize}
+\item \alert{Broken behaviour}
+\begin{itemize}
+\item calculations functional
+\item \texttt{println} non-deterministic
+\end{itemize}
+
+\item \alert{Broken API contract}
+\begin{itemize}
+\item "Classic" version returns useless nils
+\item \texttt{lazybuzz} returns useful values
+\item We like useful values
+\end{itemize}
+
+\item \alert{Broken time model}
+\begin{itemize}
+\item Effects ("do NOW") + Laziness ("maybe never") = Bad!
+\item Define separately, join later in safe ways
+\end{itemize}
+
+\item \alert{Broken aesthetic}
+\begin{itemize}
+\item Do one job, do it well. Printing is \emph{second} job.
+\item "That's George's problem." - Hal \& Gerry
+\end{itemize}
+\end{itemize}
+
+\item Bonus: See blog post for ideas to get \emph{fired} with fizzbuzz.
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgf26ca7d},fragile]{Le FizzBuzz Classique: resurrected, the Clojure way}
+ \begin{itemize}
+\item Keep your fns pure, like \texttt{lazybuzz}
+
+\item Laziness becomes friend, as nice bonus!
+(Recall the children's game definition)
+\begin{verbatim}
+(def all-naturals (rest (range)))
+(def all-fizz-buzzes (lazybuzz all-naturals))
+\end{verbatim}
+
+\item Let REPL print. Separately.
+\begin{verbatim}
+(take 15 all-fizz-buzzes)
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\section{decomplect choice}
+\label{sec:orgb43e970}
+\begin{frame}[label={sec:orgd9693b6},fragile]{decomplect sequence-making v/s choice-making}
+ \begin{itemize}
+\item Lift out logic as its own definition
+\begin{itemize}
+\item "Do one thing well"
+\begin{verbatim}
+(defn basic-buzz [n]
+  (cond
+    (divisible? n 15) "FizzBuzz"
+    (divisible? n 3) "Fizz"
+    (divisible? n 5) "Buzz"
+    :else n))
+\end{verbatim}
+\item Retain composability with \texttt{for}
+\begin{verbatim}
+(def all-fizz-buzzes
+  (for [n (rest (range))]
+    (basic-buzz n)))
+\end{verbatim}
+\item \emph{And} open up design space
+\begin{verbatim}
+(def all-fizz-buzzes
+  (map basic-buzz (rest (range))))
+\end{verbatim}
+\item \texttt{reduce} is homework (lazy v/s eager)
+\end{itemize}
+\end{itemize}
+\end{frame}
+\section{decomplect CPU}
+\label{sec:org060b8b9}
+\begin{frame}[label={sec:orgef7b39f},fragile]{decomplect execution (CPU-bound parallelism)}
+ \begin{itemize}
+\item Almost too embarrassing to write\ldots{}
+\begin{verbatim}
+(def fizz-buzz map)
+(def par-buzz pmap)
+\end{verbatim}
+\item Get CPU-bound parallelism trivially\ldots{}
+\begin{verbatim}
+(= (fizz-buzz basic-buzz (range 1 101))
+   (par-buzz basic-buzz (range 1 101)))
+\end{verbatim}
+\item Not too hard to understand!
+\begin{verbatim}
+(clojure.repl/source pmap)
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\section{decomplect domain: solution side as well as problem side}
+\label{sec:orgac55a0f}
+\begin{frame}[label={sec:org4be9531}]{decomplect domain: solution side as well as problem side}
+\begin{itemize}
+\item "Solution side" => the language of the domain
+\begin{itemize}
+\item Function names
+\item APIs and contracts
+\item Domain abstractions and entity relationships
+\end{itemize}
+\item "Problem side" => the nature of the domain
+\begin{itemize}
+\item Direct ("declarative") expression of middle-school maths
+\item Pry apart the "what" from the "how"
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org4627a71},fragile]{decomplect solution domain (concept of divisibility)}
+ \begin{itemize}
+\item Name locally or lift to top level?
+\begin{itemize}
+\item We can let-bind a lambda
+\begin{verbatim}
+(defn letbuzz [num-xs]
+  (for [n num-xs]
+    (let [divisible? (fn [n1 n2] (zero? (rem n1 n2)))]
+      (cond
+        (divisible? n 15) "FizzBuzz"
+        (divisible? n 3) "Fizz"
+        (divisible? n 5) "Buzz"
+        :else n))))
+\end{verbatim}
+\item But we like tiny fns that add compositional firepower
+\begin{verbatim}
+(defn divisible? [n1 n2]
+  (zero? (rem n1 n2)))
+
+(def divisible? (comp zero? rem))
+\end{verbatim}
+\end{itemize}
+\item All 3 variants are refrentially transparent
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orga37e5c2},fragile]{decomplect solution domain more (language of fizzbuzz)}
+ \begin{itemize}
+\item Open up design space more with more domain concepts
+\begin{verbatim}
+(defn divisible?
+  "Return the-word (truthy) when n divisible,
+  nil otherwise (falsey)."
+  [divisor the-word n]
+  (when (zero? (rem n divisor))
+    the-word))
+
+(def fizzes? (partial divisible? 3 "Fizz"))
+(def buzzes? (partial divisible? 5 "Buzz"))
+(def fizzbuzzes? (partial divisible? 15 "FizzBuzz"))
+\end{verbatim}
+\item Note:
+\begin{itemize}
+\item Truthiness/falseyness
+\item args list ordered as more constant -to-> more variable
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgc8cad74},fragile]{decomplect solution domain more (language of fizzbuzz)}
+ \begin{itemize}
+\item Now we can do \emph{\texttt{or}} buzz
+\begin{itemize}
+\item \emph{\texttt{or}} is short-circuiting
+\begin{verbatim}
+(defn or-buzz [n]
+  (or (fizzbuzzes? n)
+      (buzzes? n)
+      (fizzes? n)
+      n))
+\end{verbatim}
+\end{itemize}
+\item Or, \emph{\texttt{juxt}} express our choice
+\begin{itemize}
+\item given \emph{\texttt{((juxt f g h) 42)} -> \texttt{[(f 42) (g 42) (h 42)]}}
+\begin{verbatim}
+(defn juxt-buzz [n]
+  (some identity
+        ((juxt fizzbuzzes? buzzes? fizzes? identity)
+         n)))
+\end{verbatim}
+\item Here \texttt{juxt} is too subtle for production, BUT useful later
+\end{itemize}
+\item Sadly, order of conditionals still matters in both cases
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org9629f8b},fragile]{decomplect problem domain (school maths, 15 is LCM)}
+ \begin{itemize}
+\item Make order of calculation \emph{not} matter
+\item A table of remainders of 15, in a hash-map
+\begin{verbatim}
+(def rem15->fizz-buzz
+  {0  "FizzBuzz"
+   3  "Fizz"
+   6  "Fizz"
+   9  "Fizz"
+   12 "Fizz"
+   5  "Buzz"
+   10 "Buzz"})
+\end{verbatim}
+\item Maps are functions too!
+\begin{verbatim}
+(rem15->fizz-buzz (rem 3 15))
+;; ~nil~ implies "no result found"
+(rem15->fizz-buzz (rem 1 15))
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org5aae148},fragile]{decomplect problem domain (school maths, 15 is LCM)}
+ \begin{itemize}
+\item \texttt{nil}-pun with short-circuiting \alert{\texttt{or}}
+\begin{verbatim}
+(defn or-rem15-buzz
+  [n]
+  (or (rem15->fizz-buzz (rem n 15))
+      n))
+\end{verbatim}
+
+\item But \alert{\texttt{get}} is more right, with fallback for "not found"
+\begin{verbatim}
+(defn get-rem15-buzz
+  [n]
+  (get rem15->fizz-buzz
+       (rem n 15)
+       n))
+\end{verbatim}
+
+\item And we can do
+\begin{verbatim}
+(fizz-buzz get-rem15-n (range 1 16))
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orge65911d},fragile]{decomplect problem domain more (modulo math)}
+ \begin{itemize}
+\item FizzBuzz cyclical in modulo 3, 5, 15
+\begin{verbatim}
+(def mod-cycle-buzz ; sequence ordered by definition
+  (let [n  identity
+        f  (constantly "Fizz")
+        b  (constantly "Buzz")
+        fb (constantly "FizzBuzz")]
+    (cycle [n n f n b f n n f b n f n n fb])))
+\end{verbatim}
+\item Map can operate over \texttt{n} collections.
+\begin{verbatim}
+(def all-fizz-buzzes
+  (map (fn [f n] (f n))
+       mod-cycle-buzz ; countless modulo pattern
+       (rest (range)))) ; countless natural numbers
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orge3d262c},fragile]{decomplect ALL the FizzBuzzes (prime factors)}
+ \begin{itemize}
+\item Think prime factors and modulo cycles
+\begin{itemize}
+\item e.g. \texttt{[nil nil "Fizz"]}, \texttt{[nil nil nil nil "Buzz"]}
+\begin{verbatim}
+(defn any-mod-cycle-buzz
+  [num & words]
+  (or (not-empty (reduce str words))
+      num))
+\end{verbatim}
+\item Recall \emph{\texttt{map}} is variadic, so bring on all the primes!
+\begin{verbatim}
+(map any-mod-cycle-buzz
+     (range 1 16)
+     (cycle [nil nil "Fizz"])
+     (cycle [nil nil nil nil "Buzz"])
+     (cycle [nil "Biz"])
+     (cycle [nil nil nil nil nil nil "Fuz"]))
+\end{verbatim}
+\item Bonus: get \emph{\texttt{identity}} (\texttt{I}) definition too:
+\texttt{I} of \texttt{+} is 0, \texttt{I} of \texttt{*} is 1, \texttt{I} of \texttt{FizzBuzz} is all naturals
+\begin{verbatim}
+(map any-mod-cycle-buzz (range 1 16))
+\end{verbatim}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\section{decomplect \emph{mechanism} and \emph{policy}}
+\label{sec:org81aebbb}
+\begin{frame}[label={sec:org2eda929},fragile]{decomplect \emph{mechanism} and \emph{policy} (Say what?)}
+ \begin{itemize}
+\item Classically, "mechanism" and "policy" hard-wired together
+\begin{verbatim}
+<-- ------- MECHANISM -------- -->|<-- POLICY -->
+
+| n divisible? 3 | n divisible? 5 | Final value |
+|----------------+----------------+-------------|
+| true           | true           | FizzBuzz    |
+| true           | false          | Fizz        |
+| false          | true           | Buzz        |
+| false          | false          | n           |
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org91ec3d5},fragile]{decomplect \emph{mechanism} and \emph{policy} (pry the two apart)}
+ \begin{itemize}
+\item \alert{Mechanism}: the way to construct \emph{a} truth table
+\begin{verbatim}
+(ns dispatch.buzz)
+(defn mechanism
+  "Given two fns, presumably of any-to->Boolean,
+   return a fn that can construct inputs of a
+   2-input truth table."
+  [f? g?]
+  (juxt f? g?))
+\end{verbatim}
+\item \alert{Policy}: the way to calculate Fizz Buzz
+\begin{verbatim}
+(defn divisible? [divisor n]
+  (zero? (rem n divisor)))
+
+(def fizzes? (partial divisible? 3))
+(def buzzes? (partial divisible? 5))
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org46a9058},fragile]{decomplect \emph{mechanism} and \emph{policy} (recompose a-la-carte)}
+ \begin{itemize}
+\item \alert{Mechanism + Policy}: Polymorphic dispatch joins
+truth table mechanism with FizzBuzz policy
+\begin{itemize}
+\item Key: specialise the truth table mechanism to FizzBuzz
+\begin{verbatim}
+(map (mechanism fizzes? buzzes?)
+     [15 3 5 1])
+\end{verbatim}
+\end{itemize}
+\item Use in dispatch mechanism
+\begin{itemize}
+\item connect truth table rows to results
+\begin{verbatim}
+(def fizz-buzz map)
+(def fizz-buzz-mecha (mechanism fizzes? buzzes?))
+(defmulti dispatch-buzz
+  "Each method yields result record
+  for truth table record."
+  fizz-buzz-mecha)
+\end{verbatim}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orge4cc296},fragile]{decomplect \emph{mechanism} and \emph{policy} (recompose a-la-carte)}
+ \begin{itemize}
+\item \alert{Mechanism + Policy}: Yes, 'tis a wee FizzBuzz interpreter!
+\begin{verbatim}
+(defmethod dispatch-buzz [true true]
+  [n]
+  "FizzBuzz")
+(defmethod dispatch-buzz [true false]
+  [n]
+  "Fizz")
+(defmethod dispatch-buzz [false true]
+  [n]
+  "Buzz")
+(defmethod dispatch-buzz :default
+  [n]
+  n)
+(fizz-buzz dispatch-buzz [1 3 5 15 16])
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\section{decomplect OOP}
+\label{sec:orge77f11f}
+\begin{frame}[label={sec:org18fbbad}]{decomplect OOP: What is complected?}
+Classical OOP complects these things:
+\begin{itemize}
+\item Name (Class name / Java type)
+\item Structure (Class members, methods etc.)
+\item Behaviour (effects caused by methods)
+\item State (contained in the run-time instance of the Class)
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgdcce424},fragile]{decomplect OOP: with Clojure Polymorphism}
+ \begin{itemize}
+\item Bring back usual suspects
+\begin{verbatim}
+(ns oops.fizzbuzz)
+(def divisible? (comp zero? rem))
+(def fizz-buzz map)
+(defn basic-buzz [n]
+  (cond
+    (divisible? n 15) "FizzBuzz"
+    (divisible? n 3) "Fizz"
+    (divisible? n 5) "Buzz"
+    :else n))
+\end{verbatim}
+\item Introduce protocols (like Java Interfaces, but better)
+\begin{verbatim}
+(defprotocol IFizzBuzz
+  (proto-buzz [this]))
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgf1eb234},fragile]{decomplect OOP: with Clojure Polymorphism}
+ \begin{itemize}
+\item Add new behaviour to existing types including \emph{any} Java builtin
+\begin{verbatim}
+(extend-protocol IFizzBuzz
+  java.lang.Number
+  (proto-buzz [this]
+    (basic-buzz this)))
+\end{verbatim}
+\item Like this: Java type-based Polymorphic dispatch
+\begin{verbatim}
+(fizz-buzz proto-buzz [1 3 5 15 16])
+(fizz-buzz proto-buzz [1.0 3.0 5.0 15.0 15.9])
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orga0b0dec},fragile]{decomplect OOP: with Clojure Polymorphism}
+ \begin{itemize}
+\item Clojure protocols cleanly solve the \uline{\emph{\href{https://en.wikipedia.org/wiki/Expression\_problem}{Expression Problem}}}
+\item \emph{\alert{Without}} breaking Equality or any other existing semantics
+\begin{verbatim}
+(= 42 42) ; => true (long and long)
+(= 42 42.0) ; => false (long and double)
+(= 42.0 42.0) ; => true (double and double)
+
+;; False, as it should be.
+(= (fizz-buzz proto-buzz [1 3 5 15 16])
+   (fizz-buzz proto-buzz [1.0 3.0 5.0 15.0 15.9]))
+\end{verbatim}
+\item Without performance overhead (JVM hotspot optimization)
+\end{itemize}
+\end{frame}
+\section{decomplect information (nondestructive fizzbuzz)}
+\label{sec:org3bdf635}
+\begin{frame}[label={sec:org0426aee}]{decomplect information (nondestructive fizzbuzz)}
+\begin{itemize}
+\item All fizz-buzzes so far \emph{lose information}
+\item Can't undo entropy
+\item Very Very Bad (especially in an age of plentiful memory)
+\item We can FizzBuzz with "Composite" Data
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org64d507b},fragile]{decomplect information (Peano arithmetic representation)}
+ \begin{itemize}
+\item Define PeanoBuzz number representation starting at \texttt{[0 0]}
+\item PeanoBuzz is closed under this definition of Successor (\emph{\texttt{S}})
+\begin{verbatim}
+(def S (comp (juxt identity get-rem15-buzz)
+             inc
+             first))
+(def all-peano-buzzes (iterate S [0 0]))
+\end{verbatim}
+\item This is nondestructive (we don't lose our Numbers)
+\begin{verbatim}
+(take 16 all-peano-buzzes)
+\end{verbatim}
+\item Trivially map PeanoBuzz back to Standard FizzBuzz
+\begin{verbatim}
+(= (fizz-buzz basic-buzz (range 1 101))
+   (fizz-buzz second
+              (take 100 (rest all-peano-buzzes))))
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org02c3153},fragile]{decomplect information (Records to represent FizzBuzz)}
+ \begin{itemize}
+\item Records provide Java Types + all generic hash-map properties
+\begin{verbatim}
+(ns boxed.fizz.buzz)
+(defrecord Fizz [n])
+(defrecord Buzz [n])
+(defrecord FizzBuzz [n])
+(defrecord Identity [n])
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgd5c1533},fragile]{decomplect information (Records to represent FizzBuzz)}
+ \begin{itemize}
+\item Boxed variant of \texttt{basic-buzz}
+\begin{verbatim}
+(def divisible? (comp zero? rem))
+(def fizz-buzz map)
+
+(defn boxed-buzz [n]
+  (cond
+    (divisible? n 15) (->FizzBuzz n)
+    (divisible? n 3) (->Fizz n)
+    (divisible? n 5) (->Buzz n)
+    :else (->Identity n)))
+
+(def all-boxed-buzzes
+  (map boxed-buzz (rest (range))))
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org0ea2c92},fragile]{decomplect information (Records to represent FizzBuzz)}
+ \begin{itemize}
+\item Composite hash-map-like data!
+\begin{verbatim}
+(= (fizz-buzz boxed-buzz [1 3 5 15])
+   [#boxed.fizz.buzz.Identity{:n 1}
+    #boxed.fizz.buzz.Fizz{:n 3}
+    #boxed.fizz.buzz.Buzz{:n 5}
+    #boxed.fizz.buzz.FizzBuzz{:n 15}])
+\end{verbatim}
+\item Which is nondestructive!!
+\begin{verbatim}
+(= [1 3 5 15]
+   (fizz-buzz (comp :n boxed-buzz) [1 3 5 15]))
+\end{verbatim}
+\item \emph{And} which has real Java types!!!
+\begin{verbatim}
+(= (map type (fizz-buzz boxed-buzz [1 3 5 15]))
+   [boxed.fizz.buzz.Identity
+    boxed.fizz.buzz.Fizz
+    boxed.fizz.buzz.Buzz
+    boxed.fizz.buzz.FizzBuzz])
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\section{decomplect context (whence a number FizzBuzzes)}
+\label{sec:orgac0c86a}
+\begin{frame}[label={sec:org0d6376c}]{decomplect context (whence a number FizzBuzzes)}
+\begin{itemize}
+\item Context thus far was run-time calculation
+\begin{itemize}
+\item Meaning embedded in in-line logic
+\item Not optional / situational by default
+\end{itemize}
+\item Some ideas to pull out FizzBuzz interpretation \emph{context}
+\begin{itemize}
+\item Super handy in \emph{some} situations
+\item Utility is is contextual
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org73848a5},fragile]{decomplect context (parse, don't calculate or interpret)}
+ \begin{itemize}
+\item Off-label use of \_\href{https://clojure.org/guides/spec}{Clojure Spec\_}'s \emph{\texttt{conform}} as parser
+\item Skirts the "can be a very bad idea" territory. YMMV.
+\begin{verbatim}
+(ns conformer.buzz)
+(require '[clojure.spec.alpha :as s])
+
+(defn divisible? [divisor n]
+  (zero? (rem n divisor)))
+(def fizzes? (partial divisible? 3))
+(def buzzes? (partial divisible? 5))
+
+(s/def ::number number?)
+(s/def ::fizzes (s/and ::number fizzes?))
+(s/def ::buzzes (s/and ::number buzzes?))
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgbec344a},fragile]{decomplect context (parse, don't calculate or interpret)}
+ \begin{itemize}
+\item Now we can parse input data\ldots{}
+\begin{verbatim}
+(s/conform ::fizzes 3) ; 3
+(s/conform ::buzzes 5) ; 5
+(s/conform ::buzzes 3) ; :clojure.spec.alpha/invalid
+(s/conform (s/and ::fizzes ::buzzes) 15) ; 15
+\end{verbatim}
+\item \emph{And} handle non-conforming data gracefully,
+instead of panicking and throwing exceptions
+\begin{verbatim}
+(s/conform (s/or ::fizzes ::buzzes) "lol")
+;; => :clojure.spec.alpha/invalid
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgda6109e},fragile]{decomplect context (parse, don't calculate or interpret)}
+ \begin{itemize}
+\item Relate numbers, parsers, parser results
+\item Set of FizzBuzz parsers
+\begin{verbatim}
+(def fizz-buzz-specs #{::fizzes ::buzzes ::number})
+\end{verbatim}
+\item Parser-accumulator
+\begin{verbatim}
+(defn spec-parse-buzz [x]
+  [x (zipmap fizz-buzz-specs
+             (map #(s/conform % x) fizz-buzz-specs))])
+\end{verbatim}
+\begin{itemize}
+\item Which describes parse result in a tuple
+\begin{verbatim}
+;; e.g. (spec-parse-buzz 1)
+[1 #:conformer.buzz{:fizzes :clojure.spec.alpha/invalid,
+                    :buzzes :clojure.spec.alpha/invalid,
+                    :number 1}]
+\end{verbatim}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org0f15e6c},fragile]{decomplect context (parse, don't calculate or interpret)}
+ \begin{itemize}
+\item Accumulate parser results like this
+\begin{verbatim}
+(into {} (map spec-parse-buzz [3 15 "lol"]))
+\end{verbatim}
+\begin{itemize}
+\item A hash-map with number assoc'd with parse result
+\begin{verbatim}
+{3
+ #:conformer.buzz{:fizzes 3,
+                  :buzzes :clojure.spec.alpha/invalid,
+                  :number 3},
+ 15
+ #:conformer.buzz{:fizzes 15,
+                  :buzzes 15,
+                  :number 15},
+ "lol"
+ #:conformer.buzz{:fizzes :clojure.spec.alpha/invalid,
+                  :buzzes :clojure.spec.alpha/invalid,
+                  :number :clojure.spec.alpha/invalid}}
+\end{verbatim}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orge9b0802}]{decomplect context (wicked pprint Buzz)}
+\begin{verse}
+\emph{"Let no number escape fizzbuzzness when showing itself."}\\
+\vspace*{1em}
+- \uline{\href{https://twitter.com/rdivyanshu}{@rdivyanshu}}\\
+\vspace*{1em}
+(Truly a genetlenerd and a scholar.)\\
+\end{verse}
+\end{frame}
+\begin{frame}[label={sec:org164e993},fragile]{decomplect context (wicked pprint Buzz)}
+ \begin{itemize}
+\item Write a plain ol' function to pretty-print custom format
+\begin{verbatim}
+(ns pprint.buzz)
+(require '[clojure.pprint :as pp])
+(defn pprint-buzz [n]
+  (let [divisible? (comp zero? rem)
+        prettyprint
+        (comp prn (partial format "%d doth %s"))]
+    (cond
+      (divisible? n 15) (prettyprint n "FizzBuzzeth")
+      (divisible? n 3) (prettyprint n "Fizzeth")
+      (divisible? n 5) (prettyprint n "Buzzeth")
+      :else (prettyprint n
+                         "not Fizzeth nor Buzzeth"))))
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org4038ae5},fragile]{decomplect context (wicked pprint Buzz)}
+ \begin{itemize}
+\item Hotpatch \href{https://github.com/clojure/clojure/blob/b1b88dd25373a86e41310a525a21b497799dbbf2/src/clj/clojure/pprint/dispatch.clj\#L175}{pprint dispatcher} to
+use \texttt{pprint-buzz} formatter for all Numbers!
+\begin{verbatim}
+(#'pp/use-method pp/simple-dispatch
+                 java.lang.Number
+                 pprint-buzz)
+\end{verbatim}
+\item Enjoy a nondestructive, hilarious FizzBuzz experience!
+\begin{verbatim}
+(doseq [n [1 3 5 15]] (pp/pprint n)) ;; see REPL :)
+\end{verbatim}
+\item This is a joke implementation of a serious idea\ldots{}
+pretty-printing data is open, fully extensible, and
+can be done (and undone) in a live runtime.
+\end{itemize}
+\end{frame}
+\section{Suddenly, Transducers}
+\label{sec:orgc14b7fb}
+\begin{frame}[label={sec:org3b5440c}]{decomplect what, now? (Suddenly, Transducers.)}
+You:
+\begin{quote}
+\emph{Uh, what more could we possibly decomplect?}
+\end{quote}
+Clojure:
+\begin{quote}
+(whatever, input -> whatever) -> (whatever, input -> whatever)
+\end{quote}
+Rich Hickey:
+\begin{quote}
+\uline{\emph{\href{https://www.youtube.com/watch?v=6mTbuzafcII\&t=1677s}{Seems like a good project for the bar, later on.}}}
+\end{quote}
+\end{frame}
+\begin{frame}[label={sec:org9842793}]{decomplect what, now? (Suddenly, Transducers.)}
+\begin{itemize}
+\item Data source
+\begin{itemize}
+\item sequence, stream, channel, socket etc.
+\end{itemize}
+\item Data sink
+\begin{itemize}
+\item sequence, stream, channel, socket etc.
+\end{itemize}
+\item Data transformer
+\begin{itemize}
+\item function of any value -> any other value
+\end{itemize}
+\item Data transformation process
+\begin{itemize}
+\item mapping, filtering, reducing etc.
+\end{itemize}
+\item Some process control
+\begin{itemize}
+\item Transduce finite data (of course)
+\item Transduce streams
+\item With optional early termination in either case
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgcca840f},fragile]{decomplect whatever (some setup)}
+ \begin{itemize}
+\item Bring back the usual suspects (this is key\ldots{} reuse logic)
+\begin{verbatim}
+(ns transducery.buzz)
+
+(def divisible? (comp zero? rem))
+
+(defn basic-buzz [n]
+  (cond
+    (divisible? n 15) "FizzBuzz"
+    (divisible? n 3) "Fizz"
+    (divisible? n 5) "Buzz"
+    :else n))
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgcbf7b8e},fragile]{decomplect Computation and \emph{Output} format (Demo 1)}
+ \begin{itemize}
+\item Separately define \emph{only} the transformation "xform"
+\begin{verbatim}
+(def fizz-buzz-xform
+  (comp (map basic-buzz)
+        (take 100))) ;; early termination
+\end{verbatim}
+\item Separately define \emph{only} input data
+\begin{verbatim}
+(def natural-nums (rest (range)))
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org41956be},fragile]{decomplect Computation and \emph{Output} format (Demo 1)}
+ \begin{itemize}
+\item Compose in various ways
+\begin{itemize}
+\item To produce a sequence
+\begin{verbatim}
+(transduce fizz-buzz-xform ;; calculator step
+           conj ;; output method
+           []   ;; output sink
+           natural-nums) ;; input source
+\end{verbatim}
+\item To produce a string
+\begin{verbatim}
+(transduce fizz-buzz-xform
+           str
+           ""
+           natural-nums)
+\end{verbatim}
+\item To produce a CSV string
+\begin{verbatim}
+(transduce (comp fizz-buzz-xform
+                 (map #(str s "," %)))
+           str
+           ""
+           natural-nums)
+\end{verbatim}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org2cc110a},fragile]{decomplect Computation and \emph{Output} format (Demo 1)}
+ \begin{itemize}
+\item Consider:
+\begin{itemize}
+\item Parts \emph{not} modified, though \emph{output} and/or \emph{xform} modded
+\item Effort needed to reuse fizz-buzzes other than \texttt{basic-buzz}?
+\end{itemize}
+\item Try it!
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgd89be41},fragile]{decomplect Computation and \emph{Input} format (Demo 2)}
+ \begin{itemize}
+\item Setup
+\begin{verbatim}
+(ns transducery.buzz)
+(def numbers-file
+  "Plaintext file containing numbers in some format."
+  "/tmp/deleteme-spat-by-clj-fizz-buzz-demo.txt")
+#_(spit numbers-file
+        (clojure.string/join "\n" (range 1 10001)))
+#_(slurp numbers-file)
+\end{verbatim}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org2a66945},fragile]{decomplect Computation and \emph{Input} format (Demo 2)}
+ \begin{itemize}
+\item Transduce! Now, over file data.
+\begin{verbatim}
+(transduce (comp (map #(Integer/parseInt %))
+                 fizz-buzz-xform) ;; calculator step
+           conj ;; output method
+           []   ;; output sink
+           (clojure.string/split-lines
+            (slurp numbers-file))) ;; input source
+\end{verbatim}
+\item Split-lines and file slurpin' still complected!!!
+\begin{itemize}
+\item decomplect clues in Tim Baldridge's (excellent) \uline{\href{https://tbaldridge.pivotshare.com/categories/transducers/2426/media}{tutorials}}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org5aad46d},fragile]{decomplected xform as a standalone calculator (Demo 3)}
+ \begin{itemize}
+\item The xform can still calculate just a single item
+\begin{verbatim}
+(ns transducery.buzz)
+((fizz-buzz-xform conj) [] 3) ;; => ["Fizz"]
+((fizz-buzz-xform str) "" 3) ;; => "Fizz"
+((fizz-buzz-xform str) "" 1) ;; => "1"
+((fizz-buzz-xform (fn [_ out] out)) nil 3) ;; "Fizz"
+((fizz-buzz-xform (fn [_ out] out)) nil 1) ;; 1
+\end{verbatim}
+\item Meditate:
+\begin{itemize}
+\item The transducer's mandate of \emph{a la carte} re-composition \emph{demands}
+that \emph{all} the new pulling apart \emph{must be fully compatible}
+with \emph{all} the old pulling apart.
+\end{itemize}
+\end{itemize}
+\end{frame}
+\section{Fin}
+\label{sec:orga1c7f74}
+\begin{frame}[label={sec:orgbdcbc83},fragile]{So Long And Thanks For All The \(\lambda\)s}
+ \begin{itemize}
+\item Acknowledgements
+\begin{verse}
+To everyone who reviewed drafts, gave\\
+feedback, ideas, encouragement, time\ldots{}\\
+\ldots{} friends, fellow Clojurian Slack-ers,\\
+sundry gentlenerds, one's better half,\\
+and you dear reader.\\
+\vspace*{1em}
+May the Source be with you.\\
+\vspace*{1em}
+\(\lambda\) \texttt{<3}\\
+\end{verse}
+\item Blog post: \uline{\href{https://www.evalapply.org/posts/n-ways-to-fizzbuzz-in-clojure/}{evalapply.org/posts/n-ways-to-fizzbuzz-in-clojure}}
+\item Email complaints or fizzbuzzes to
+\begin{itemize}
+\item fizzbuzz@evalapply.org
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org5b1e96f}]{Buzz}
+Ideas on deck, to put self on the hook\ldots{}
+
+\begin{itemize}
+\item[{$\square$}] curried fizzbuzz (like Ring libraries),
+
+\item[{$\square$}] concurrent fizzbuzz (with agents)
+
+\item[{$\square$}] advanced transducing fizzbuzz
+(xform all the fizz-buzzes in all ways)
+
+\item[{$\square$}] Maaaybe re-do Rich's ants sim
+4 species of, ah, ConcurrAnts:
+FizzAnt, BuzzAnt, FizzBuzzAnt, IdentiAnt
+
+\item[{$\square$}] Outside of clojure.core?
+maaybe core.async if not too contrived
+\end{itemize}
+\end{frame}
+\end{document}
