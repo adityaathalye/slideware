@@ -4,6 +4,7 @@
 #+EMAIL: fizzbuzz@evalapply.org
 #+DATE: 2022-03-26 Sat
 #+STARTUP: beamer
+#+STARTUP: latexpreview
 #+LATEX_CLASS: beamer
 #+LATEX_CLASS_OPTIONS: [presentation]
 #+BEAMER_THEME: Antibes
@@ -44,7 +45,7 @@
     For otherwise, nothing lives, nothing evolves.
 
     In the name of the \alpha and the \beta and the \eta...
-      (\lambda{}x.x x) (\lambda{}x.x x) ; eternally
+      \(\lambda x.x x\) \(\lambda x.x x\) ; eternally
    #+end_verse
 * Definitions
 ** Definitions
@@ -775,7 +776,7 @@
 
      May the Source be with you.
 
-     \lambda ~<3~
+     \(\lambda\) ~<3~
      #+end_verse
    - Blog post: _[[https://www.evalapply.org/posts/n-ways-to-fizzbuzz-in-clojure/][evalapply.org/posts/n-ways-to-fizzbuzz-in-clojure]]_
    - Email complaints or fizzbuzzes to
