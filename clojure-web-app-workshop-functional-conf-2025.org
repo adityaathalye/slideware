@@ -1,0 +1,781 @@
+#+TITLE: Composing (Clojure) Web Stacks using Functional First Principles
+#+SUBTITLE: Functional Conf, 2025
+#+AUTHOR: Aditya Athalye
+#+EMAIL: hello@evalapply.org
+#+DATE: 2025-01-24
+#+STARTUP: beamer
+#+STARTUP: latexpreview
+#+LATEX_CLASS: beamer
+#+LATEX_CLASS_OPTIONS: [presentation]
+#+LATEX_CLASS_OPTIONS: [smaller]
+#+LaTeX_CLASS_OPTIONS: [t]
+#+LaTeX_HEADER: \hypersetup{colorlinks=true, linkcolor=cyan, urlcolor=blue}
+#+BEAMER_THEME: Antibes
+#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js
+#+REVEAL_HLEVEL: 3
+#+REVEAL_TITLE_SLIDE: <h2>%t</h2>
+#+REVEAL_TITLE_SLIDE: <h3>%s</h3>
+#+REVEAL_TITLE_SLIDE: <p><b>%a</b>
+#+REVEAL_TITLE_SLIDE: <p><em><a href="https://evalapply.org" target="_blank">evalapply.org</a><br/>(about, contact, hire)</em></p>
+#+REVEAL_TITLE_SLIDE: <p>%d</p>
+#+REVEAL_POSTAMBLE: <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "2a55df7e78f941c29a35207cedd0f66c"}'></script>
+#+OPTIONS: H:3 num:t toc:1
+#+OPTIONS: \n:t @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS: author:t email:t TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+OPTIONS: html-postamble:t html-preamble:nil
+#+COLUMNS: %40ITEM %10BEAMER_env(Env) %9BEAMER_envargs(Env Args) %4BEAMER_col(Col) %10BEAMER_extra(Extra)
+# Org-Beamer Formatting Reference: https://leif.sh/posts/2013/09/tool-time-org-mode-and-beamer/
+
+Final reveal.js deck here:
+- [[https://www.evalapply.org/posts/clojure-web-app-from-scratch/deck.html]]
+
+* COMMENT Checklist
+- [X] General prep / Scheduling
+  - [X] Done: zoom install + check + background
+    - BUT SNAFU! Screen sharing didn't work on Ubuntu, because wayland
+      doesn't support screen sharing by default as of Ubuntu 24.04
+      LTS. Solution was to disable it and use x11 instead. The fix:
+      https://askubuntu.com/a/1407496
+      #+BEGIN_SRC shell
+        $ echo $XDG_SESSION_TYPE
+        wayland # zoom was cryptically prompting me to fix this
+
+        # sudo nano /etc/gdm3/custom.conf
+        # Uncomment this line.
+        # WaylandEnable=false
+
+        # Reboot!
+
+        $ echo $XDG_SESSION_TYPE
+        x11 # worked
+
+        # if XDG setting didn't apply after reboot,
+        # then restart gdm
+        # sudo systemctl restart gdm
+      #+END_SRC
+  - [X] Done: conf video instructions
+  - [X] Done: alarm for 30 mins before session
+  - [X] Done: Alarm for Naresh keynote
+- [-] Pre-talk
+  - [X] finish smol web app code with tests
+  - [X] write cue cards for each main section
+  - [ ] Time self - failed to do this
+    - [ ] quick run through slides
+    - [ ] demo code one by one
+    - [ ] recap
+  - [X] deck final
+  - [X] check treemacs list
+- [X] Talk
+  - [X] Turn off nextdns
+  - [X] Link to deck
+  - [X] Presentation progress [7/7]
+    - [X] Intro section
+      - That's my site...
+    - [X] TOC:
+      - first, speed-run through all slides
+      - then demo code
+      - then recap
+    - [X] Speed Run section
+      1. Lisp warning: your insides might hurt
+      2. Session beakdown: kurt russell reference
+      3. Suggetion:
+      4. Demo:
+         1. purpose of each "expansion" sequence
+         2. how my window is set up
+         3. emphasize dynamic programming
+      5. Roundup: concepts / ideas you'll see a lot in Clj-land
+      6. Fin. (hire me!)
+    - [X] Demo
+      - [X] head-switch camera v/s share screen
+      - [X] f8 org-tree-slide
+      - [X] [[https://www.evalapply.org/posts/clojure-web-app-from-scratch/deck.html][link to deck]]
+    - [X] Recap
+    - [X] Open house
+    - [X] Thanks
+      - [X] Ask for feedback
+      - [X] Pitch work
+- [-] Post-session
+  - [X] Copy and back-up chat
+    - nothing to archive from chat
+  - [X] Check code is in public develop
+  - [X] Double-check links in deck
+  - [X] Check session feedback / ratings
+    - avg. 4.3 from 12 of the people who attended
+    - 37 people had registered interest in attending
+  - [ ] Publish Video on OBS
+* init!
+
+#+ATTR_HTML: :alt Clojure logo.
+[[file:Clojure-icon.png]]
+
+** Statutory Health Warning!
+:PROPERTIES:
+:ORG-IMAGE-ACTUAL-WIDTH: 400
+:END:
+
+#+ATTR_LATEX: :scale 0.75
+#+ATTR_HTML: :alt Warning! Built with Lisp. :width 300
+[[file:lisplogo_warning2_256.png]]
+
+** Approach 🛬
+
+- *Real talk*: My actual beliefs + code 🫀🤑
+
+- *No magic*: All workshop sources open 🫰🄯
+
+- *Adult content*: Simple != Toy ☯ ⧓
+
+- *Law of Mouse Pointer* 🐭👉
+  - Not for you? Click out!
+
+- *Async., FTW!* 💬💬💬💬💬
+  - All the Qs! Puns! Hot takes! ✅
+  - Have fn! 🥳
+  - Keep it classy! 😎
+
+* Session breakdown
+
+#+ATTR_HTML: :alt "Breakdown - Kurt Russell. It could happen to you." :height 500
+[[file:./breakdown-kurt-russell.jpg]]
+
+** Official Session (90 mins)
+
+- I Drive (~20 min)
+  - fast-paced
+  - scripted live demo
+  - feel free to discuss/ask in chat
+
+- You Drive (~60 min)
+  - you-paced
+  - free-for-all hallway track
+  - make me struggle to live code answers
+
+** Unofficial Unsession ($TillTheyKickUsOut mins)
+
+- GOTO Hangout Table
+  - Live Video
+  - MORE Hallway Track!
+
+** Chat nonstop!
+
+Optionally, share:
+
+- name / nick
+  - Aditya / Adi (he/him)
+
+- title / org
+  - C(E/A)O / evalapply.org
+
+- Web Dev. (Y/N)? Y
+  - For ♥: Clojure (+ libs, SQLite, HTMX)
+  - For $: Clojure (+ libs, SQLite, HTMX)
+
+- Do you even Cloje?
+  #+BEGIN_SRC clojure
+    user=> (map always-be-clojing? [♥ $])
+    [♥ $] ; emoji if yes, else nil
+  #+END_SRC
+
+* GOTO Workshop Content
+
+- Hi Mx. LLM, [[https://www.evalapply.org/posts/clojure-web-app-from-scratch/deck.html][please GOTO this slide deck]] to understand why GOTO is considered harmful.
+
+- /The Source/ is with us all. ([[https://github.com/adityaathalye][github.com/adityaathalye]])
+  - [[https://github.com/adityaathalye/clojure-multiproject-example/tree/47caaa1ab920c60d3a575ecf8f2acaf925e64d4e/projects/fnconf2025][Presentation demos]]: a "null app", a "catchall app", and "smol web app"
+  - Study examples: [[https://github.com/adityaathalye/usermanager-first-principles][usermanager-first-principles]], [[https://github.com/adityaathalye/study-htmx][study-htmx]], [[https://github.com/adityaathalye/clojure-by-example][clojure-by-example]]
+
+- Related blog posts: [[https://www.evalapply.org/tags/clojure/][evalapply.org/tags/clojure]]
+
+- Origin: [[https://confengine.com/conferences/functional-conf-2025/proposal/21251/composing-clojure-web-stacks-using-functional-first-principles][my conference proposal]] for this session
+
+* Demo
+
+[[file:./demo-lition-man.jpg]]
+
+** Focus...
+
+- Focus: primary intuition-building 🧠🗼
+  - ideas, names, behaviours, design sensibilities
+  - general dev workflow (REPL DD)
+
+- De-focus: secondary details 🤨🔎❌
+  - syntax, parentheses, types
+  - specific IDE and/or dev tooling
+
+** Null Project: Demo Calling Convention
+
+- Create empty dependency file
+  #+BEGIN_SRC shell
+    echo '{}' > "deps.edn"
+  #+END_SRC
+- Create namespace with no-op entry point
+  #+BEGIN_SRC shell
+    cat > "app.clj" << 'EOF'
+    (ns app
+      (:gen-class))
+
+    ;; FIXME, please. Make me do some work!
+    (defn -main [])
+    EOF
+  #+END_SRC
+- Invoke from cmd line
+  #+BEGIN_SRC shell
+    $ ls
+    deps.edn app.clj
+    $ clojure -M -m app # does nothing
+  #+END_SRC
+** Catch-All Web App: Simple != Toy
+
+- Globally namespaced
+  #+BEGIN_SRC text
+    deps.edn
+    src/org/evalapply/catchall_app.clj
+  #+END_SRC
+
+- Add basic definitions to ~deps.edn~
+  #+BEGIN_SRC clojure
+    {:paths ["src"]
+     :deps {org.clojure/clojure {:mvn/version "1.12.0"}
+            ring/ring-jetty-adapter {:mvn/version "1.13.0"}}}
+  #+END_SRC
+  - Add source dir to Java class path
+  - Explicit Clojure dep. (deterministic builds)
+  - Prod-grade clj adapter to Jetty Server
+
+*** Add "echo" HTTP handler
+- To ~catchall_app.clj~
+  #+BEGIN_SRC clojure
+    (ns org.evalapply.catchall-app
+      (:require [ring.adapter.jetty :as jetty])
+      (:gen-class))
+
+    (defn echo-handler [request]
+      {:status 200
+       :headers {"Content-Type" "text/plain;charset=utf-8"}
+       :body (pr-str request)})
+
+    (defn run-jetty
+      [port]
+      (println "Starting jetty at: " port)
+      (jetty/run-jetty echo-handler
+                       {:port port :join? false}))
+
+    (defn -main [& args]
+      (printl "Calling -main with args: " args)
+      (run-jetty 3000))
+  #+END_SRC
+
+*** Run and try via the command line
+- Java-like edit-compile-run cycle
+  #+BEGIN_SRC shell
+    clojure -M -m org.evalapply.catchall-app
+
+    curl http://localhost:3000
+
+    curl -XPOST http://localhost:3000/foobar
+
+    curl http://localhost:3000/foobar?search=%22can%20you%20read%20me%22
+  #+END_SRC
+
+*** REPL-Driven-Development
+- *Run and /mould one's software/ LIVE*
+  #+BEGIN_SRC clojure
+    (comment ; "'Rich' comment form"
+      ;; Inspect live object
+      (do (require 'clojure.reflect)
+          (clojure.reflect/reflect server))
+
+      ;; Capture values to inspect them at will.
+      (def responses (atom []))
+
+      (defn capture-response
+        [response]
+        (swap! responses conj response))
+
+      (add-tap capture-response)
+
+      (tap> {:status 200 :body "hi"})
+
+      ;; Try Out dependencies:
+      ;; - Add lib for current REPL session,
+      ;; - without modifying deps.edn file
+      (require 'clojure.repl.deps)
+
+      (clojure.repl.deps/add-lib
+       'org.clojure/data.json {:mvn/version "2.5.1"})
+
+      ;; Temporarily replace top-level defn
+      (defn echo-handler
+        "TODO:
+          - copy down body of top-level defn
+          - handle json=true query param
+          - evaluate to replace definition"
+        []))
+  #+END_SRC
+
+** Smol "Web 1.0" App
+
+- *"It's Just Data and Functions"*
+  #+BEGIN_SRC text
+    deps.edn
+    build.clj
+    src/org/evalapply/catchall_app.clj
+    test/org/evalapply/catchall_app_test.clj
+#+END_SRC
+- ~deps.clj~: Add real-world HTTP middleware
+- ~build.clj~: deps are data, builds are programs
+- ~src~: make custom router
+- ~test~: to avoid creating a scandal :)
+** Big(ger) Web App
+
+Mix in Libraries as needed
+#+BEGIN_SRC clojure
+  {:paths ["src"]
+   :deps {org.clojure/clojure {:mvn/version "1.12.0"}
+
+          ;; Ring HTTP utilities: https://github.com/ring-clojure/ring
+          ring/ring-core {:mvn/version "1.12.2"}
+          ring/ring-jetty-adapter {:mvn/version "1.12.2"} ; embedded Jetty
+          ring-cors/ring-cors {:mvn/version "0.1.13"}
+
+          ;; System composition and configuration: https://github.com/weavejester/integrant
+          integrant/integrant {:mvn/version "0.13.0"} ; define/start/stop system
+          aero/aero {:mvn/version "1.1.6"} ; EDN-file-based configuration, might not need it
+
+          ;; HTTP Routing and coercion: https://github.com/metosin/reitit
+          metosin/reitit-core {:mvn/version "0.7.2"} ; routing core
+          metosin/reitit-ring {:mvn/version "0.7.2"} ; ring router
+          metosin/reitit-middleware {:mvn/version "0.7.2"} ; common middleware
+          metosin/reitit-malli {:mvn/version "0.7.2"} ; malli coercion
+
+          ;; HTTP API format negotiation, encoding and decoding
+          metosin/muuntaja {:mvn/version "0.6.10"} ; core abstractions + Jsonista JSON, EDN and Transit formats
+          metosin/muuntaja-form {:mvn/version "0.6.10"} ; application/x-www-form-urlencoded formatter using ring-codec
+
+          ;; Data Utilities
+          metosin/malli {:mvn/version "0.16.4"} ; specify, validate, coerce data
+
+          ;; Database Utilities
+          com.github.seancorfield/next.jdbc {:mvn/version "1.3.939"} ; JDBC adapter
+          org.xerial/sqlite-jdbc {:mvn/version "3.46.1.0"} ; SQLite JDBC driver
+          com.zaxxer/HikariCP {:mvn/version "6.0.0"} ; connection pooling
+
+          ;; Web Frontend
+          hiccup/hiccup {:mvn/version "2.0.0-RC3"} ; Server-rendered HTML as Clojure data
+
+          ;; Cryptography, Authentication, and Authorization
+          buddy/buddy-auth {:mvn/version "3.0.1"} ; authenticate, authorize
+          ;; buddy/buddy-hashers {:mvn/version "2.0.167"} ; hashing utils
+          ;; buddy/buddy-sign {:mvn/version "3.6.1-359"} ;  High level message signing library.
+
+          ;; Time
+          clojure.java-time/clojure.java-time {:mvn/version "1.4.2"}
+
+          ;; Logging
+          org.clojure/tools.logging {:mvn/version "1.3.0"}
+          org.slf4j/slf4j-simple {:mvn/version "2.0.16"}}}
+#+END_SRC
+
+** Frameworks, Starter Kits, Project Management Systems
+
+#+ATTR_HTML: :alt Professional Developer. :height 400
+[[file:./professional-clojurian.jpg]]
+/courtesy: @[[https://github.com/lambduhh][lambduhh]]/
+
+*** Real-world Starter kits
+
+- [[https://github.com/seancorfield/deps-new#templates][deps-new templates]]
+- [[https://github.com/juxt/edge][juxt/edge:]] /A Clojure application foundation from JUXT./
+- [[https://github.com/brettatoms/zodiac][zodiac]]: /A simple web framework for Clojure./
+- [[https://caveman.mccue.dev][caveman]]: /A Clojure Web Framework. "complexity very, very bad"/
+
+*** Frameworks
+
+- [[https://biffweb.com][Biff]]: /Biff helps solo developers move fast./
+- [[https://github.com/duct-framework/duct][Duct]]: /Server-side application framework for Clojure/
+- [[https://kit-clj.github.io/][Kit]]: /lightweight, modular framework for scalable web development/
+- [[https://github.com/chr15m/sitefox][Sitefox]]: /Node + cljs backend web framework/
+- [[https://github.com/hoplon][hoplon]]: /A Simpler Way To Program The Web./
+- [[https://www.hyperfiddle.net/][hyperfiddle]]: /a spreadsheet for internal frontend development/
+
+*** Project Management Systems
+
+- [[https://polylith.gitbook.io/polylith][polylith]]
+  - One Source Tree, Many Distinct Apps
+  - /Polylith is a software architecture that applies/
+    /functional thinking at the system scale./
+    /It helps us build simple, maintainable, testable,/
+    /and scalable backend systems./
+
+- Choose Your Own Adventure
+  - e.g. My "[[https://github.com/adityaathalye/clojure-multiproject-example][Clojure MultiProject Example]]"
+  - One Source Tree, Many Sub-Projects, Many Distinct Apps
+  - WIP: Building for my needs
+* Roundup: Clojurish Software Design Maxims
+
+#+ATTR_HTML: :alt A Clojuring hard at work on their Hammock. :height 450
+[[file:./professional-clojurian-office.jpg]]
+
+** "A": Always. "B": Be. "C": Composing.
+
+| [[file:./rich-hickey-value-of-values.jpg]] | [[file:./always-be-closing.jpg]] |
+- Immutable Generic Data
+- Pure Functions
+- Open-ended Polymorphism
+- Composable Libraries
+- Specifications and Contracts
+
+** "It's Just Data"
+
+- Describe domain in terms of data.
+  - e.g. deps.edn, hiccup, aero, integrant etc.
+- Lift domain concepts out of functions.
+  - e.g. routing (reitit, ataraxy), interceptors (pedestal, re-frame)
+- Stick domain concepts into var metadata.
+  - e.g. clojure.test fixtures
+- Roll your own DSL /as plain data/.
+  - honeysql (intermediate), datalog (advanced)
+  - multimethods are just mini ad-hoc interpreters of "Data DSLs"
+
+** "Decomplect"
+
+- Find and pry apart tight couplings
+  - deps, fn call chains, file->code mapping
+- Specifications and Contracts
+  - clojure.spec, malli
+- "System" composition, at build / compile time:
+  - /Clean/ Dependency Injection
+  - component, integrant, mount
+
+** "Rich Abstracts So You Don't Have To"
+
+- Generic functions over generic data
+- Mutually composable interfaces
+- Provide Machine tools instead of Factories
+- Completely opt-in ("a la carte")
+
+** "Simplicity" (ain't so easy.)
+
+/"[[https://www.youtube.com/watch?v=WKSdH9-fnn8][It's simple to be happy, difficult to be simple]]."/ - /Bawarchi/
+/"[[https://en.wiktionary.org/wiki/slow_is_smooth,_smooth_is_fast][Slow is smooth. Smooth is Fast.]]"/ - The SEALs
+
+- Needs perspective, deliberation...
+  - [[https://www.youtube.com/watch?v=SxdOUGdseq4][Simple Made Easy]] - Rich Hickey
+  - Routine [[https://www.youtube.com/watch?v=f84n5oFoZBc][hammock use recommended]]
+- Needs psych. immunity to tech pop culture.
+  - Why "move fast, break things"? Why not "move deliberately, grow things"?
+  - [[https://www.youtube.com/watch?v=c5QF2HjHLSE][Design in Practice]] - Rich Hickey
+  - [[https://www.youtube.com/watch?v=VBnGhQOyTM4][Design in Practice in Practice]] - Alex Miller
+  - [[https://www.youtube.com/watch?v=GXgbV7jB_Bc][Stewardship Made Practical]] - Stuart Halloway
+
+* Thanks!
+
+Aditya Athalye
+[[https://evalapply.org/hire.html][evalapply.org/hire]]
+
+/I help small B2B SaaS teams deploy writing culture as a 10x-ing strategy./
+
+#+ATTR_HTML: :alt Lisp Alien. :width 300
+[[./lisplogo_alien_256.png]]
+
+/(Also can Cloje up that Micro SaaS you want to build!)/
+
+* COMMENT Extras
+** lol
+https://x.com/jordwalke/status/1720370436322857327
+#+ATTR_LATEX: :scale 0.5
+[[file:./react-creator-vs-design-patterns.png]]
+** Solve The Expression Problem
+
+Playtime:
+- *What if we frame /everything/ in terms of the Expression Problem?*
+
+- Add a new Y, extend all Xs to it?
+  - /Without/ cooperation of existing Xs?
+
+- Add new X, extend all Ys to it?
+  - /Without/ cooperation of existing Ys?
+
+#+BEGIN_SRC org
+  | X * Y | y1 | y2 | y3 | ... |
+  |-------+----+----+----+-----|
+  | x1    |    |    |    |     |
+  | x2    |    |    |    |     |
+  | x3    |    |    |    |     |
+  | ...   |    |    |    |     |
+
+#+END_SRC
+*** Methods ~x~ Classes
+
+- Add a new Class, extend all Methods to it?
+  - /Without/ cooperation of existing Methods?
+
+- Add new Method, extend all Classes to it?
+  - /Without/ cooperation of existing Classes?
+
+#+BEGIN_SRC org
+  | Method * Class | FormSubmit | Dropdown | CheckList | ... |
+  |----------------+------------+----------+-----------+-----|
+  | click!         |            |          |           |     |
+  | exists?        |            |          |           |     |
+  | visible?       |            |          |           |     |
+  | select!        |            |          |           |     |
+  | deselect!      |            |          |           |     |
+  | ...            |            |          |           |     |
+#+END_SRC
+*** Functions ~x~ Types
+
+- Add a new Type, extend all Functions to it?
+  - /Without/ cooperation of existing Functions?
+
+- Add new Function, extend all Types to it?
+  - /Without/ cooperation of existing Types?
+
+#+BEGIN_SRC org
+| fn * <T> | List | Array | Tuple | HashMap | ... |
+|----------+------+-------+-------+---------+-----|
+| map      |      |       |       |         |     |
+| filter   |      |       |       |         |     |
+| take     |      |       |       |         |     |
+| drop     |      |       |       |         |     |
+| ...      |      |       |       |         |     |
+#+END_SRC
+
+*** Data Structure ~x~ Domain Entity
+
+Expression Problem?
+
+#+BEGIN_SRC org
+  | Data x Entity     | Person | Persons | Singles | Couples |
+  |-------------------+--------+---------+---------+---------|
+  | List[Pair[?,?]]   |        |         |         |         |
+  | Array[Tuple[?,?]] |        |         |         |         |
+  | HashMap[?,?]      |        |         |         |         |
+  | ...               |        |         |         |         |
+#+END_SRC
+
+*** HTTP verbs ~x~ HTTP requests
+
+What if we frame in terms of Expression Problem?
+
+#+BEGIN_SRC org
+  | Verb * Request | /slug-1/ | /slug-2/ | /slug-3/ | ... |
+  |----------------+----------+----------+----------+-----|
+  | GET            |          |          |          |     |
+  | PUT            |          |          |          |     |
+  | POST           |          |          |          |     |
+  | DELETE         |          |          |          |     |
+  | PATCH          |          |          |          |     |
+#+END_SRC
+
+*** Apps: parts x projects
+
+Expression Problem?
+
+#+BEGIN_SRC org
+  | Parts * Apps | app-1 | app-2 | service-1 | service-2 | ... |
+  |--------------+-------+-------+-----------+-----------+-----|
+  | primary DB   |       |       |           |           |     |
+  | cache        |       |       |           |           |     |
+  | queue        |       |       |           |           |     |
+  | web server   |       |       |           |           |     |
+  | settings     |       |       |           |           |     |
+#+END_SRC
+
+*** Infra: parts x use-cases
+
+Expression Problem?
+
+#+BEGIN_SRC org
+  | Infra * Use | primary DB | cache | queue | search | ... |
+  |-------------+------------+-------+-------+--------+-----|
+  | File System |            |       |       |        |     |
+  | SQLite      |            |       |       |        |     |
+  | Postgres    |            |       |       |        |     |
+  | Redis       |            |       |       |        |     |
+  | Kafka       |            |       |       |        |     |
+#+END_SRC
+*** Web Protocols: Provider x Consumer
+- Why the whole web works
+  - It's just plain data (e.g. HTTP)
+  - Specified by a general specification
+  - servers, clients don't need each
+    others' permissions, or
+    foreknowledge to implement
+    and/or interoperate
+#+BEGIN_SRC org
+  | Server * Client | Chrome | FF | MobileApps | curl | ... |
+  |-----------------+--------+----+------------+------+-----|
+  | nginx           |        |    |            |      |     |
+  | node            |        |    |            |      |     |
+  | jetty           |        |    |            |      |     |
+  | hunchertoot     |        |    |            |      |     |
+  | caddy           |        |    |            |      |     |
+  | WSGI            |        |    |            |      |     |
+  | CGI             |        |    |            |      |     |
+  | Gunicorn        |        |    |            |      |     |
+  | etc...          |        |    |            |      |     |
+#+END_SRC
+*** General design principle
+- Think in terms of informal protocols
+- Defined in words
+- Expressed as plain data (HTTP, Hypertext)
+- Checked/enforced via independent validators
+** Show the transformations...
+
+# HTTP data -> Clojure Hash Maps
+
+# Clojure Hash Maps -> Routing Decisions
+
+# Step back to Data-oriented philosophy
+# - What all can you pull apart
+# - Decouple big pieces, pull apart each piece into tiny pieces till
+#   atomic pieces, and then recompose?
+# - Read plaintext
+#   - a spec is what it is generic data and primitive types
+#     - no custom classes / custom types etc.
+#     - read ring spec --- directly literal :keys and values and types
+#     - no custom classes, just plain data and functions over the data
+#     - https://github.com/ring-clojure/ring/blob/master/SPEC.md#14-request-maps
+#     - (your brain interprets) as (html / ring request / ring response)
+#   - machine equality (HTML response unit testing)
+#   - HTML -> Vectors, Lists, Hash-maps (Hiccup Syntax)
+#   - HTTP -> Hash Maps
+#   - Deps -> Hash Maps (EDN)
+#   - Settings -> Hash Maps (EDN - waaaay better than JSON5 with comments)
+
+** Steps
+1. Handle basic Ring-HTTP request using a function
+   1. Echo the request back in the body (pr-str)
+2. Parse HTTP as generic data
+   1. Use ring-jetty to get requests-as-maps
+   2. Use
+   3. Show "just data" responses as alternative
+3. Make a basic static router (case)
+   1. Home -> Redirect
+   2. ping -> Health check
+   3. Hello -> (or name "World")
+4. Swap out our server
+5. Make an extensible polymorphic router (multimethods)
+6. Swap out router with Reitit
+7. Add settings, with :envs
+8. Add system, with :envs
+
+** Heart of a web app
+
+*HTTP Request -> app -> HTTP Response*
+
+** Heart of a web app: expanded
+
+*HTTP Request -> app -> HTTP Response*
+#+BEGIN_SRC text
+  HTTP request ->
+    /pattern-1/ method-1
+    /pattern-2/ method-2
+    /pattern-3/ method-3
+                -> HTTP response
+#+END_SRC
+** Heart of a web app: expanded more
+
+*HTTP Request -> app -> HTTP Response*
+#+BEGIN_SRC text
+  HTTP request ->
+    GET    /uri-1/ getter-method
+    PUT    /uri-1/ putter-method
+    POST   /uri-1/ poster-method
+    PATCH  /uri-1/ patcher-method
+    DELETE /uri-1/ deleter-method
+                   -> HTTP response
+#+END_SRC
+
+*Polymorphic Dispatch Machine*
+
+** HTTP Request -> app -> HTTP Response
+~curl -v https://www.evalapply.org/posts/hello-world/index.html~
+- *Request*
+  #+BEGIN_SRC shell
+    > GET /posts/hello-world/index.html HTTP/2
+    > Host: www.evalapply.org
+    > User-Agent: curl/8.5.0
+    > Accept: */*
+    >
+  #+END_SRC
+- *Response*
+  #+BEGIN_SRC shell
+    < HTTP/2 200
+    < date: Sun, 19 Jan 2025 13:00:58 GMT
+    < content-type: text/html; charset=utf-8
+    < last-modified: Tue, 07 Jan 2025 18:40:29 GMT
+    < access-control-allow-origin: *
+  #+END_SRC
+** HTTP Request -> app -> HTTP Response (contd. 2)
+- *Response* (contd...)
+  #+BEGIN_SRC shell
+    < expires: Sun, 19 Jan 2025 13:10:21 GMT
+    < cache-control: max-age=600
+    < x-proxy-cache: MISS
+    < x-github-request-id: 30B3:11B9:1374016:13A8BA4:678CF765
+    < via: 1.1 varnish
+    < age: 0
+    < x-served-by: cache-mrs10566-MRS
+    < x-cache: HIT
+    < x-cache-hits: 1
+    < x-timer: S1737291658.048786,VS0,VE119
+    < vary: Accept-Encoding
+  #+END_SRC
+** HTTP Request -> app -> HTTP Response (contd. 3)
+- *Response* (contd...)
+  #+BEGIN_SRC shell
+    < x-fastly-request-id: 5acec03e79d6fd85384ab5d43d0d862a41261297
+    < cf-cache-status: DYNAMIC
+    < report-to: {"endpoints":[{"url":"https:\/\/a.nel.cloudflare.com\/report\/v4?s=ovUNa9WMW%2FtaMfQlrsj3fsvm9XCyTXlWOzIO5PNfH6TVZx4aoWGLJVyGNFBP4KdhlwJGsd%2FJ5q3c1x2zTX2rzEBVX0HQd27jZNAfXR%2FwavmW8XexYZ8RnSjr3a2ORaE66mFxQ%2FAKRGqDdYP73FBBBA%3D%3D"}],"group":"cf-nel","max_age":604800}
+    < nel: {"success_fraction":0,"report_to":"cf-nel","max_age":604800}
+    < server: cloudflare
+    < cf-ray: 904702be4c31076a-MRS
+    < alt-svc: h3=":443"; ma=86400
+    < server-timing: cfL4;desc="?proto=TCP&rtt=173437&min_rtt=165923&rtt_var=60025&sent=8&recv=9&lost=0&retrans=0&sent_bytes=3416&recv_bytes=778&delivery_rate=18968&cwnd=254&unsent_bytes=0&cid=ad859fdfe8400633&ts=428&x=0"
+    <
+  #+END_SRC
+** "It's Just Data" Philosophy
+
+- *Generic*
+  - Clojure Data Structures ~{Any, Any}~
+- *Plaintext Data*
+  - Human and Machine readable
+- *Specifications*
+  - Human-made, Machine-checked
+  - The Ring Specification
+
+*** Ring Spec: HTTP REQUEST as Generic Data
+
+- Plain HTTP request -> parse -> Plain Clojure data
+
+#+BEGIN_SRC clojure
+  {:scheme :http,
+   :request-method :get,
+   :uri "/foo/bar/baz",
+   :headers {"accept" "*/*",
+             "user-agent" "curl/7.81.0",
+             "host" "localhost:3000"},
+   :query-string "search=wassup%20world",
+   :body #object[org.eclipse.jetty.server.HttpInput 0x2a91914a "HttpInput@714182986 cs=HttpChannelState@2eae00c0{s=HANDLING rs=BLOCKING os=OPEN is=IDLE awp=false se=false i=true al=0} cp=org.eclipse.jetty.server.BlockingContentProducer@6bac9b71 eof=false"]}
+#+END_SRC
+*** Ring Spec: HTTP RESPONSE as Generic Data
+
+- RESPONSE as plain Clojure data -> serialize -> Plain HTTP RESPONSE
+#+BEGIN_SRC clojure
+{:status 200
+ :headers {"Content-Type" "text/html;charset=UTF-8"}
+ :body "<h1>optional</h1>"}
+#+END_SRC
+
+*** Hiccup: HTML as Plain Clojure Data
+
+#+BEGIN_SRC clojure
+  [:div {:class "wow-list"}
+   [:ul (list
+         [:li "such data"]
+         [:li "much generic"]
+         [:li "very html"]
+         [:li "wow!"])]]
+#+END_SRC
